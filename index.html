@@ -1,41 +1,165 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Global Store</title>
-    <!-- This loads Supabase directly into your browser -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        #status { color: blue; font-weight: bold; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            color: #222;
+        }
+        /* The Grid Layout for Products */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* Individual Product Card */
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .product-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+        .product-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+        .category-tag {
+            display: inline-block;
+            background: #eef2ff;
+            color: #4f46e5;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-transform: capitalize;
+            margin-bottom: 10px;
+            width: fit-content;
+        }
+        .price {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #059669;
+            margin-top: auto;
+            margin-bottom: 15px;
+        }
+        .buy-btn {
+            background-color: #111827;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .buy-btn:hover {
+            background-color: #374151;
+        }
+        #status {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome to My Global Store</h1>
-    <p id="status">Connecting to database...</p>
+
+    <header>
+        <h1>🌍 Global Fashion Store</h1>
+        <p>Premium Clothes, Shoes & Jewelry</p>
+    </header>
+
+    <p id="status">Loading products...</p>
+
+    <!-- This is where the products will appear -->
+    <div id="product-grid" class="product-grid"></div>
 
     <script>
-        // Your Supabase credentials are already inserted here
+        // Your Supabase credentials
         const supabaseUrl = 'https://qtszfqwojgzyypxybgug.supabase.co'
         const supabaseKey = 'sb_publishable_ju-FVpTSui3d4b5Ab0L3HA_sklq66Ut'
         
-        // Connect to Supabase
         const { createClient } = supabase
         const db = createClient(supabaseUrl, supabaseKey)
 
-        // Test the connection by trying to fetch products
-        async function checkConnection() {
+        // Fetch and display products
+        async function loadProducts() {
             const { data, error } = await db.from('products').select('*')
+            const statusText = document.getElementById('status')
+            const grid = document.getElementById('product-grid')
             
             if (error) {
-                document.getElementById('status').innerText = 'Error: ' + error.message
-                document.getElementById('status').style.color = 'red'
-            } else {
-                document.getElementById('status').innerText = '✅ Success! Connected to Supabase. Found ' + data.length + ' products.'
-                document.getElementById('status').style.color = 'green'
+                statusText.innerText = 'Error loading products: ' + error.message
+                statusText.style.color = 'red'
+                return
             }
+
+            if (data.length === 0) {
+                statusText.innerText = 'No products found in the database yet.'
+                return
+            }
+
+            // Hide the loading text
+            statusText.style.display = 'none'
+
+            // Create a card for each product
+            data.forEach(product => {
+                const card = `
+                    <div class="product-card">
+                        <img src="${product.image_url}" alt="${product.name}">
+                        <div class="product-info">
+                            <span class="category-tag">${product.category}</span>
+                            <h3>${product.name}</h3>
+                            <p class="price">$${product.price}</p>
+                            <button class="buy-btn" onclick="addToCart('${product.name}')">Add to Cart</button>
+                        </div>
+                    </div>
+                `
+                grid.innerHTML += card
+            })
+        }
+
+        // Simple alert for the cart button (we will build a real cart later!)
+        function addToCart(productName) {
+            alert(`✅ "${productName}" added to your cart! (Cart feature coming soon)`)
         }
         
-        checkConnection()
+        // Run the function when the page loads
+        loadProducts()
     </script>
 </body>
 </html>
