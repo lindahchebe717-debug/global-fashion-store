@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Global Store</title>
+    <!-- This loads Supabase directly into your browser -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Welcome to My Store</h1>
+    <p id="status">Connecting to database...</p>
+
+    <script>
+        // Replace these with your actual Supabase URL and Anon Key
+        const supabaseUrl = 'YOUR_SUPABASE_URL_HERE'
+        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY_HERE'
+        
+        // Connect to Supabase
+        const { createClient } = supabase
+        const db = createClient(supabaseUrl, supabaseKey)
+
+        // Test the connection by trying to fetch products
+        async function checkConnection() {
+            const { data, error } = await db.from('products').select('*')
+            
+            if (error) {
+                document.getElementById('status').innerText = 'Error: ' + error.message
+            } else {
+                document.getElementById('status').innerText = 'Success! Connected to Supabase. Found ' + data.length + ' products.'
+            }
+        }
+        
+        checkConnection()
+    </script>
+</body>
+</html>
