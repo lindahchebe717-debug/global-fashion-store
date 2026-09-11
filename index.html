@@ -4,15 +4,19 @@
     <title>My Global Store</title>
     <!-- This loads Supabase directly into your browser -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        #status { color: blue; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My Store</h1>
+    <h1>Welcome to My Global Store</h1>
     <p id="status">Connecting to database...</p>
 
     <script>
-        // Replace these with your actual Supabase URL and Anon Key
-        const supabaseUrl = 'YOUR_SUPABASE_URL_HERE'
-        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY_HERE'
+        // Your Supabase credentials are already inserted here
+        const supabaseUrl = 'https://qtszfqwojgzyypxybgug.supabase.co'
+        const supabaseKey = 'sb_publishable_ju-FVpTSui3d4b5Ab0L3HA_sklq66Ut'
         
         // Connect to Supabase
         const { createClient } = supabase
@@ -24,8 +28,10 @@
             
             if (error) {
                 document.getElementById('status').innerText = 'Error: ' + error.message
+                document.getElementById('status').style.color = 'red'
             } else {
-                document.getElementById('status').innerText = 'Success! Connected to Supabase. Found ' + data.length + ' products.'
+                document.getElementById('status').innerText = '✅ Success! Connected to Supabase. Found ' + data.length + ' products.'
+                document.getElementById('status').style.color = 'green'
             }
         }
         
