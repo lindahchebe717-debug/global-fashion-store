@@ -11,132 +11,167 @@
             background-color: #f9f9f9;
             color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
+        /* Header with Cart Icon */
         header {
-            text-align: center;
-            margin-bottom: 40px;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         header h1 {
-            font-size: 2.5rem;
-            color: #222;
+            margin: 0;
+            font-size: 1.5rem;
+            flex-grow: 1;
+            text-align: center;
         }
-        /* The Grid Layout for Products */
+        .cart-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            position: relative;
+            padding: 5px 10px;
+        }
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e11d48;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        /* Product Grid */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 25px;
-            max-width: 1200px;
-            margin: 0 auto;
         }
-        /* Individual Product Card */
         .product-card {
             background: white;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
             display: flex;
             flex-direction: column;
         }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-        }
-        .product-card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-        }
-        .product-info {
-            padding: 15px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        .product-info h3 {
-            margin: 0 0 10px 0;
-            font-size: 1.2rem;
-        }
+        .product-card:hover { transform: translateY(-5px); }
+        .product-card img { width: 100%; height: 250px; object-fit: cover; }
+        .product-info { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .product-info h3 { margin: 0 0 10px 0; font-size: 1.2rem; }
         .category-tag {
-            display: inline-block;
-            background: #eef2ff;
-            color: #4f46e5;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            text-transform: capitalize;
-            margin-bottom: 10px;
-            width: fit-content;
+            display: inline-block; background: #eef2ff; color: #4f46e5;
+            padding: 4px 8px; border-radius: 20px; font-size: 0.8rem;
+            text-transform: capitalize; margin-bottom: 10px; width: fit-content;
         }
-        .price {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #059669;
-            margin-top: auto;
-            margin-bottom: 15px;
-        }
+        .price { font-size: 1.4rem; font-weight: bold; color: #059669; margin-top: auto; margin-bottom: 15px; }
         .buy-btn {
-            background-color: #111827;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s;
+            background-color: #111827; color: white; border: none;
+            padding: 12px; border-radius: 8px; font-size: 1rem; cursor: pointer;
         }
-        .buy-btn:hover {
-            background-color: #374151;
+
+        /* Cart Sidebar */
+        .cart-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 999;
         }
-        #status {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #6b7280;
+        .cart-sidebar {
+            position: fixed; top: 0; right: -400px; width: 350px; max-width: 90%; height: 100%;
+            background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 1000;
+            transition: right 0.3s ease; display: flex; flex-direction: column;
         }
+        .cart-sidebar.open { right: 0; }
+        .cart-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h2 { margin: 0; font-size: 1.5rem; }
+        .close-cart { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .cart-items { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .cart-item { display: flex; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #f3f4f6; padding-bottom: 15px; }
+        .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        .cart-item-info { flex-grow: 1; }
+        .cart-item-info h4 { margin: 0 0 5px 0; font-size: 1rem; }
+        .cart-item-info p { margin: 0; color: #059669; font-weight: bold; }
+        .remove-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.9rem; margin-top: 5px; }
+        .cart-footer { padding: 20px; border-top: 1px solid #eee; }
+        .cart-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        .checkout-btn { width: 100%; padding: 15px; background: #111827; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+        .empty-cart { text-align: center; color: #9ca3af; margin-top: 50px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🌍 Global Fashion Store</h1>
-        <p>Premium Clothes, Shoes & Jewelry</p>
+        <div style="width: 50px;"></div> <!-- Spacer for layout -->
+        <h1>🌍 Global Fashion</h1>
+        <button class="cart-btn" onclick="toggleCart()">
+            🛒 <span class="cart-badge" id="cart-count">0</span>
+        </button>
     </header>
 
-    <p id="status">Loading products...</p>
+    <main>
+        <p id="status" style="text-align: center; font-size: 1.2rem; color: #6b7280;">Loading products...</p>
+        <div id="product-grid" class="product-grid"></div>
+    </main>
 
-    <!-- This is where the products will appear -->
-    <div id="product-grid" class="product-grid"></div>
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button class="close-cart" onclick="toggleCart()">✕</button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <p class="empty-cart">Your cart is empty.</p>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">$0.00</span>
+            </div>
+            <button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout</button>
+        </div>
+    </div>
 
     <script>
-        // Your Supabase credentials
+        // Supabase setup
         const supabaseUrl = 'https://qtszfqwojgzyypxybgug.supabase.co'
         const supabaseKey = 'sb_publishable_ju-FVpTSui3d4b5Ab0L3HA_sklq66Ut'
-        
         const { createClient } = supabase
         const db = createClient(supabaseUrl, supabaseKey)
 
-        // Fetch and display products
+        // Cart State (saved in browser memory)
+        let cart = JSON.parse(localStorage.getItem('global_store_cart')) || []
+        let allProducts = [] 
+
+        // Load Products from Supabase
         async function loadProducts() {
             const { data, error } = await db.from('products').select('*')
             const statusText = document.getElementById('status')
             const grid = document.getElementById('product-grid')
             
-            if (error) {
-                statusText.innerText = 'Error loading products: ' + error.message
-                statusText.style.color = 'red'
-                return
-            }
+            if (error) { statusText.innerText = 'Error: ' + error.message; return }
+            if (data.length === 0) { statusText.innerText = 'No products found.'; return }
 
-            if (data.length === 0) {
-                statusText.innerText = 'No products found in the database yet.'
-                return
-            }
-
-            // Hide the loading text
+            allProducts = data
             statusText.style.display = 'none'
 
-            // Create a card for each product
             data.forEach(product => {
                 const card = `
                     <div class="product-card">
@@ -145,7 +180,7 @@
                             <span class="category-tag">${product.category}</span>
                             <h3>${product.name}</h3>
                             <p class="price">$${product.price}</p>
-                            <button class="buy-btn" onclick="addToCart('${product.name}')">Add to Cart</button>
+                            <button class="buy-btn" onclick="addToCart('${product.id}', this)">Add to Cart</button>
                         </div>
                     </div>
                 `
@@ -153,13 +188,85 @@
             })
         }
 
-        // Simple alert for the cart button (we will build a real cart later!)
-        function addToCart(productName) {
-            alert(`✅ "${productName}" added to your cart! (Cart feature coming soon)`)
+        // Cart Functions
+        function addToCart(productId, btnElement) {
+            const product = allProducts.find(p => p.id === productId)
+            if (!product) return
+
+            const existingItem = cart.find(item => item.id === productId)
+            if (existingItem) {
+                existingItem.quantity += 1
+            } else {
+                cart.push({ id: product.id, name: product.name, price: product.price, image: product.image_url, quantity: 1 })
+            }
+            
+            saveCart()
+            renderCart()
+            
+            // Visual feedback on the button
+            btnElement.innerText = 'Added! ✓'
+            btnElement.style.background = '#059669'
+            setTimeout(() => {
+                btnElement.innerText = 'Add to Cart'
+                btnElement.style.background = '#111827'
+            }, 1000)
         }
-        
-        // Run the function when the page loads
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId)
+            saveCart()
+            renderCart()
+        }
+
+        function saveCart() {
+            localStorage.setItem('global_store_cart', JSON.stringify(cart))
+        }
+
+        function renderCart() {
+            const cartItemsEl = document.getElementById('cart-items')
+            const cartCountEl = document.getElementById('cart-count')
+            const cartTotalEl = document.getElementById('cart-total-price')
+
+            // Update the little red badge number
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
+            cartCountEl.innerText = totalItems
+
+            // Calculate total price
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            cartTotalEl.innerText = `$${totalPrice.toFixed(2)}`
+
+            // Show items in the sidebar
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = '<p class="empty-cart">Your cart is empty.</p>'
+                return
+            }
+
+            cartItemsEl.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <img src="${item.image}" alt="${item.name}">
+                    <div class="cart-item-info">
+                        <h4>${item.name}</h4>
+                        <p>$${item.price} x ${item.quantity}</p>
+                        <button class="remove-btn" onclick="removeFromCart('${item.id}')">Remove</button>
+                    </div>
+                </div>
+            `).join('')
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-sidebar').classList.toggle('open')
+            document.getElementById('cart-overlay').style.display = 
+                document.getElementById('cart-sidebar').classList.contains('open') ? 'block' : 'none'
+        }
+
+        function goToCheckout() {
+            if (cart.length === 0) { alert('Your cart is empty!'); return }
+            alert('Proceeding to checkout! (We will build the checkout form next).')
+        }
+
+        // Initialize the store
         loadProducts()
+        renderCart() // Render cart on page load just in case
     </script>
 </body>
 </html>
