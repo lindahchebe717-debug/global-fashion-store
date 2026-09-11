@@ -269,7 +269,7 @@
             document.getElementById('sidebar-title').innerText = 'Your Cart'
         }
 
-        function submitOrder() {
+        async function submitOrder() {
             const name = document.getElementById('cust-name').value
             const email = document.getElementById('cust-email').value
             const address = document.getElementById('cust-address').value
@@ -282,16 +282,64 @@
                 return
             }
 
-            // For now, we will show a success message. 
-            // In the next step, we will connect this to Supabase to save the order!
-            alert(`🎉 Order Placed Successfully!\n\nThank you, ${name}.\nWe will ship your ${cart.length} item(s) to ${city}, ${country}.\n\n(This is a demo. Next, we will save this to Supabase!)`)
+            // Show loading state on the button
+            const submitBtn = document.querySelector('#checkout-view-buttons .action-btn')
+            const originalBtnText = submitBtn.innerText
+            submitBtn.innerText = 'Processing...'
+            submitBtn.disabled = true
+
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            const fullAddress = `${address}, ${city}, ${country}, ${postal}`
+
+            // 1. Save the main Order to Supabase
+            const { data: orderData, error: orderError } = await db.from('orders').insert({
+                total_amount: totalPrice,
+                status: 'pending',
+                shipping_address: fullAddress,
+                customer_name: name,
+                customer_email: email,
+                customer_city: city,
+                customer_country: country,
+                customer_postal: postal
+            }).select()
+
+            if (orderError) {
+                alert('Error creating order: ' + orderError.message)
+                submitBtn.innerText = originalBtnText
+                submitBtn.disabled = false
+                return
+            }
+
+            const orderId = orderData[0].id
+
+            // 2. Save the individual Order Items to Supabase
+            const orderItemsToInsert = cart.map(item => ({
+                order_id: orderId,
+                product_id: item.id,
+                quantity: item.quantity,
+                price_at_purchase: item.price
+            }))
+
+            const { error: itemsError } = await db.from('order_items').insert(orderItemsToInsert)
+
+            if (itemsError) {
+                alert('Error saving order items: ' + itemsError.message)
+                submitBtn.innerText = originalBtnText
+                submitBtn.disabled = false
+                return
+            }
+
+            // 3. Success! Clear everything and show confirmation
+            alert(`🎉 Order Placed Successfully!\n\nOrder ID: ${orderId}\nThank you, ${name}.\nWe will ship your items to ${city}, ${country}.`)
             
-            // Clear cart after "order"
             cart = []
             saveCart()
             renderCart()
-            toggleCart() // Close sidebar
+            toggleCart() // Close the sidebar
             document.getElementById('checkout-form-el').reset()
+            
+            submitBtn.innerText = originalBtnText
+            submitBtn.disabled = false
         }
 
         loadProducts()
