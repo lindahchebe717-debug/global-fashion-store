@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #333; margin: 0; padding: 0; }
+        
+        /* Login Gate Styles */
+        .login-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: #111827; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        .login-box h2 { margin-top: 0; color: #111827; }
+        .login-box input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        .login-box button { width: 100%; padding: 12px; background: #111827; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+        .login-box button:hover { background: #374151; }
+        .error-msg { color: #ef4444; font-size: 0.9rem; display: none; }
+
+        /* Dashboard Styles */
+        .dashboard-header { background: #111827; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { margin: 0; font-size: 1.5rem; }
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 30px 40px; }
+        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-card h3 { margin: 0 0 10px 0; color: #6b7280; font-size: 0.9rem; text-transform: uppercase; }
+        .stat-card p { margin: 0; font-size: 2rem; font-weight: bold; color: #111827; }
+        .stat-card.revenue p { color: #059669; }
+
+        .orders-container { padding: 0 40px 40px 40px; }
+        .orders-table { width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-collapse: collapse; }
+        .orders-table th { background: #f9fafb; padding: 15px; text-align: left; font-size: 0.85rem; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+        .orders-table td { padding: 15px; border-bottom: 1px solid #f3f4f6; font-size: 0.95rem; vertical-align: top; }
+        .orders-table tr:last-child td { border-bottom: none; }
+        
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: capitalize; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-shipped { background: #dbeafe; color: #1e40af; }
+        .status-delivered { background: #d1fae5; color: #065f46; }
+
+        .item-list { margin: 0; padding-left: 15px; color: #4b5563; font-size: 0.9rem; }
+        .item-list li { margin-bottom: 4px; }
+
+        @media (max-width: 768px) {
+            .stats-container, .orders-container, .dashboard-header { padding: 20px; }
+            .orders-table { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Password Gate -->
+    <div id="login-gate" class="login-container">
+        <div class="login-box">
+            <h2>🔒 Admin Access</h2>
+            <p>Enter password to view dashboard.</p>
+            <input type="password" id="admin-password" placeholder="Password" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button onclick="checkPassword()">Unlock Dashboard</button>
+            <p id="error-msg" class="error-msg">Incorrect password. Try again.</p>
+        </div>
+    </div>
+
+    <!-- 2. The Actual Dashboard (Hidden until password is entered) -->
+    <div id="dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <h1>📊 Global Fashion Admin</h1>
+            <button class="logout-btn" onclick="logout()">Lock Dashboard</button>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card revenue">
+                <h3>Total Revenue</h3>
+                <p id="total-revenue">$0.00</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <p id="total-orders">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Shipment</h3>
+                <p id="pending-orders">0</p>
+            </div>
+        </div>
+
+        <div class="orders-container">
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Details</th>
+                        <th>Items Purchased</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-tbody">
+                    <tr><td colspan="6" style="text-align:center; padding:30px;">Loading orders...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // --- Supabase Setup ---
+        const supabaseUrl = 'https://qtszfqwojgzyypxybgug.supabase.co'
+        const supabaseKey = 'sb_publishable_ju-FVpTSui3d4b5Ab0L3HA_sklq66Ut'
+        const { createClient } = supabase
+        const db = createClient(supabaseUrl, supabaseKey)
+
+        // --- Password Logic ---
+        // CHANGE THIS PASSWORD to whatever you want!
+        const SECRET_PASSWORD = 'admin123' 
+
+        function checkPassword() {
+            const input = document.getElementById('admin-password').value
+            if (input === SECRET_PASSWORD) {
+                document.getElementById('login-gate').style.display = 'none'
+                document.getElementById('dashboard').style.display = 'block'
+                loadDashboardData()
+            } else {
+                document.getElementById('error-msg').style.display = 'block'
+            }
+        }
+
+        function logout() {
+            document.getElementById('dashboard').style.display = 'none'
+            document.getElementById('login-gate').style.display = 'flex'
+            document.getElementById('admin-password').value = ''
+            document.getElementById('error-msg').style.display = 'none'
+        }
+
+        // --- Dashboard Data Logic ---
+        async function loadDashboardData() {
+            // Fetch all orders, including the items inside them and the product names
+            const { data, error } = await db
+                .from('orders')
+                .select(`
+                    *,
+                    order_items (
+                        quantity,
+                        price_at_purchase,
+                        products (
+                            name,
+                            category
+                        )
+                    )
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) {
+                console.error(error)
+                document.getElementById('orders-tbody').innerHTML = '<tr><td colspan="6" style="color:red;">Error loading data.</td></tr>'
+                return
+            }
+
+            // Calculate Stats
+            let totalRevenue = 0
+            let pendingCount = 0
+            
+            data.forEach(order => {
+                totalRevenue += parseFloat(order.total_amount)
+                if (order.status === 'pending') pendingCount++
+            })
+
+            document.getElementById('total-revenue').innerText = `$${totalRevenue.toFixed(2)}`
+            document.getElementById('total-orders').innerText = data.length
+            document.getElementById('pending-orders').innerText = pendingCount
+
+            // Render Orders Table
+            const tbody = document.getElementById('orders-tbody')
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#6b7280;">No orders yet. Share your store link to get your first customer!</td></tr>'
+                return
+            }
+
+            tbody.innerHTML = data.map(order => {
+                // Format the items list
+                const itemsHtml = order.order_items.map(item => {
+                    const productName = item.products ? item.products.name : 'Unknown Product'
+                    return `<li>${item.quantity}x ${productName} ($${item.price_at_purchase})</li>`
+                }).join('')
+
+                // Format Date
+                const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { 
+                    year: 'numeric', month: 'short', day: 'numeric' 
+                })
+
+                // Status Badge Class
+                let statusClass = 'status-pending'
+                if (order.status === 'shipped') statusClass = 'status-shipped'
+                if (order.status === 'delivered') statusClass = 'status-delivered'
+
+                return `
+                    <tr>
+                        <td><strong>#${order.id.substring(0, 8).toUpperCase()}</strong></td>
+                        <td>
+                            <strong>${order.customer_name}</strong><br>
+                            <span style="color:#6b7280; font-size:0.85rem;">${order.customer_email}</span><br>
+                            <span style="color:#4b5563; font-size:0.85rem;">${order.customer_city}, ${order.customer_country}</span>
+                        </td>
+                        <td><ul class="item-list">${itemsHtml}</ul></td>
+                        <td><strong>$${parseFloat(order.total_amount).toFixed(2)}</strong></td>
+                        <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                        <td>${orderDate}</td>
+                    </tr>
+                `
+            }).join('')
+        }
+    </script>
+</body>
+</html>
