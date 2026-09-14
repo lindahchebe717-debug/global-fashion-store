@@ -6,13 +6,16 @@
     <title>My Global Store</title>
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- PayPal SDK with your Client ID -->
+    <!-- PayPal SDK -->
     <script src="https://www.paypal.com/sdk/js?client-id=BAAZMd7M6w_7WS2D-cxFkPGegcqY-cNW_jyYjPHL_0LnyKwvx0BBveVaU8RXItcmvkGWrmmSdc4qJ96hCs&currency=USD"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
         header { background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
         header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; }
+        .header-links { display: flex; gap: 15px; align-items: center; }
+        .header-link { color: #4f46e5; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .header-link:hover { text-decoration: underline; }
         .cart-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; position: relative; padding: 5px 10px; }
         .cart-badge { position: absolute; top: -5px; right: -5px; background: #e11d48; color: white; font-size: 0.7rem; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         main { padding: 20px; max-width: 1200px; margin: 0 auto; }
@@ -47,7 +50,8 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #374151; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-        .form-group input:focus { outline: none; border-color: #4f46e5; ring: 2px solid #eef2ff; }
+        .form-group input:focus { outline: none; border-color: #4f46e5; }
+        .form-group input:disabled { background-color: #f3f4f6; cursor: not-allowed; }
 
         .cart-footer { padding: 20px; border-top: 1px solid #eee; background: #fafafa; }
         .cart-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
@@ -55,16 +59,35 @@
         .action-btn:hover { background: #374151; }
         .back-to-cart-btn { width: 100%; padding: 10px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; cursor: pointer; }
         .back-to-cart-btn:hover { background: #f3f4f6; }
-        
-        /* PayPal Button Container */
         #paypal-button-container { margin-top: 15px; }
+
+        /* Auth Modal Styles */
+        .auth-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
+        .auth-modal.active { display: flex; }
+        .auth-box { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .auth-box h2 { margin-top: 0; text-align: center; color: #111827; }
+        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
+        .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #6b7280; font-weight: 600; }
+        .auth-tab.active { color: #4f46e5; border-bottom: 2px solid #4f46e5; margin-bottom: -2px; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .auth-btn { width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+        .auth-btn:hover { background: #4338ca; }
+        .close-auth { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+        .user-greeting { font-size: 0.9rem; color: #059669; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <header>
-        <a href="track-order.html" style="position: absolute; left: 20px; color: #4f46e5; text-decoration: none; font-size: 0.9rem;">📦 Track Order</a>
-        <div style="width: 50px;"></div>
+        <div class="header-links">
+            <a href="track-order.html" class="header-link">📦 Track Order</a>
+            <span id="auth-display" style="display:none;">
+                <span class="user-greeting" id="user-greeting">Hi, User</span>
+                <span class="header-link" onclick="logoutUser()" style="color:#ef4444; margin-left:10px;">(Logout)</span>
+            </span>
+            <span id="login-prompt" class="header-link" onclick="openAuthModal()">👤 Login / Sign Up</span>
+        </div>
         <h1>🌍 Global Fashion</h1>
         <button class="cart-btn" onclick="toggleCart()">
             🛒 <span class="cart-badge" id="cart-count">0</span>
@@ -75,6 +98,46 @@
         <p id="status" style="text-align: center; font-size: 1.2rem; color: #6b7280;">Loading products...</p>
         <div id="product-grid" class="product-grid"></div>
     </main>
+
+    <!-- Auth Modal -->
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-box" style="position: relative;">
+            <span class="close-auth" onclick="closeAuthModal()">✕</span>
+            <h2>Welcome</h2>
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuthTab('login')">Log In</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
+            </div>
+            
+            <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="auth-btn">Log In</button>
+            </form>
+
+            <form id="signup-form" class="auth-form" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="signup-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" required minlength="6">
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+        </div this is a typo in my thought process, fixing below>
+    </div>
 
     <div class="cart-overlay" id="cart-overlay" onclick="toggleCart()"></div>
     <div class="cart-sidebar" id="cart-sidebar">
@@ -98,7 +161,7 @@
                     </div>
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" id="cust-email" required placeholder="john@example.com">
+                        <input type="email" id="cust-email" required placeholder="john@example.com" readonly>
                     </div>
                     <div class="form-group">
                         <label>Shipping Address</label>
@@ -124,8 +187,6 @@
                         <input type="text" id="cust-postal" required placeholder="M5V 2T6">
                     </div>
                 </form>
-                
-                <!-- PayPal Buttons will render here -->
                 <div id="paypal-button-container"></div>
             </div>
         </div>
@@ -135,11 +196,9 @@
                 <span>Total:</span>
                 <span id="cart-total-price">$0.00</span>
             </div>
-            
             <div id="cart-view-buttons">
                 <button class="action-btn" onclick="showCheckout()">Proceed to Checkout</button>
             </div>
-
             <div id="checkout-view-buttons" style="display: none;">
                 <button class="action-btn" id="initiate-payment-btn" onclick="initiatePayment()">Review & Pay with PayPal</button>
                 <button class="back-to-cart-btn" onclick="showCart()">← Back to Cart</button>
@@ -155,21 +214,98 @@
 
         let cart = JSON.parse(localStorage.getItem('global_store_cart')) || []
         let allProducts = [] 
-        let currentOrderId = null // To store the ID while payment is processing
+        let currentOrderId = null
+        let currentUser = null
 
+        // --- AUTH FUNCTIONS ---
+        async function checkSession() {
+            const { data: { session } } = await db.auth.getSession()
+            if (session) {
+                currentUser = session.user
+                document.getElementById('login-prompt').style.display = 'none'
+                document.getElementById('auth-display').style.display = 'flex'
+                document.getElementById('user-greeting').innerText = `Hi, ${currentUser.email.split('@')[0]}`
+                document.getElementById('cust-email').value = currentUser.email
+                document.getElementById('cust-email').readOnly = true
+                
+                // Fetch profile to auto-fill
+                const { data: profile } = await db.from('profiles').select('*').eq('id', currentUser.id).single()
+                if (profile) {
+                    if(profile.full_name) document.getElementById('cust-name').value = profile.full_name
+                    if(profile.shipping_address) document.getElementById('cust-address').value = profile.shipping_address
+                    if(profile.city) document.getElementById('cust-city').value = profile.city
+                    if(profile.country) document.getElementById('cust-country').value = profile.country
+                    if(profile.postal_code) document.getElementById('cust-postal').value = profile.postal_code
+                }
+            } else {
+                currentUser = null
+                document.getElementById('login-prompt').style.display = 'flex'
+                document.getElementById('auth-display').style.display = 'none'
+                document.getElementById('cust-email').readOnly = false
+            }
+        }
+
+        function openAuthModal() { document.getElementById('auth-modal').classList.add('active') }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active') }
+        
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'))
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'))
+            if (tab === 'login') {
+                document.querySelectorAll('.auth-tab')[0].classList.add('active')
+                document.getElementById('login-form').classList.add('active')
+            } else {
+                document.querySelectorAll('.auth-tab')[1].classList.add('active')
+                document.getElementById('signup-form').classList.add('active')
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault()
+            const name = document.getElementById('signup-name').value
+            const email = document.getElementById('signup-email').value
+            const password = document.getElementById('signup-password').value
+
+            const { data, error } = await db.auth.signUp({
+                email, password,
+                options: { data: { full_name: name } }
+            })
+            if (error) { alert(error.message); return }
+            alert('Account created! Please check your email to confirm, or you are logged in.')
+            closeAuthModal()
+            checkSession()
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault()
+            const email = document.getElementById('login-email').value
+            const password = document.getElementById('login-password').value
+
+            const { error } = await db.auth.signInWithPassword({ email, password })
+            if (error) { alert(error.message); return }
+            closeAuthModal()
+            checkSession()
+        }
+
+        async function logoutUser() {
+            await db.auth.signOut()
+            currentUser = null
+            checkSession()
+            document.getElementById('checkout-form-el').reset()
+        }
+
+        // --- STORE FUNCTIONS ---
         async function loadProducts() {
             const { data, error } = await db.from('products').select('*')
             const statusText = document.getElementById('status')
             const grid = document.getElementById('product-grid')
-            
             if (error) { statusText.innerText = 'Error: ' + error.message; return }
             if (data.length === 0) { statusText.innerText = 'No products found.'; return }
 
             allProducts = data
             statusText.style.display = 'none'
-
             data.forEach(product => {
-                const card = `
+                grid.innerHTML += `
                     <div class="product-card">
                         <img src="${product.image_url}" alt="${product.name}">
                         <div class="product-info">
@@ -178,59 +314,35 @@
                             <p class="price">$${product.price}</p>
                             <button class="buy-btn" onclick="addToCart('${product.id}', this)">Add to Cart</button>
                         </div>
-                    </div>
-                `
-                grid.innerHTML += card
+                    </div>`
             })
         }
 
         function addToCart(productId, btnElement) {
             const product = allProducts.find(p => p.id === productId)
             if (!product) return
-
             const existingItem = cart.find(item => item.id === productId)
-            if (existingItem) {
-                existingItem.quantity += 1
-            } else {
-                cart.push({ id: product.id, name: product.name, price: product.price, image: product.image_url, quantity: 1 })
-            }
-            saveCart()
-            renderCart()
-            
-            btnElement.innerText = 'Added! ✓'
-            btnElement.style.background = '#059669'
-            setTimeout(() => {
-                btnElement.innerText = 'Add to Cart'
-                btnElement.style.background = '#111827'
-            }, 1000)
+            if (existingItem) existingItem.quantity += 1
+            else cart.push({ id: product.id, name: product.name, price: product.price, image: product.image_url, quantity: 1 })
+            saveCart(); renderCart()
+            btnElement.innerText = 'Added! ✓'; btnElement.style.background = '#059669'
+            setTimeout(() => { btnElement.innerText = 'Add to Cart'; btnElement.style.background = '#111827' }, 1000)
         }
 
         function removeFromCart(productId) {
             cart = cart.filter(item => item.id !== productId)
-            saveCart()
-            renderCart()
+            saveCart(); renderCart()
         }
 
-        function saveCart() {
-            localStorage.setItem('global_store_cart', JSON.stringify(cart))
-        }
+        function saveCart() { localStorage.setItem('global_store_cart', JSON.stringify(cart)) }
 
         function renderCart() {
             const cartItemsEl = document.getElementById('cart-items')
-            const cartCountEl = document.getElementById('cart-count')
-            const cartTotalEl = document.getElementById('cart-total-price')
-
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
-            cartCountEl.innerText = totalItems
-
+            document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.quantity, 0)
             const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-            cartTotalEl.innerText = `$${totalPrice.toFixed(2)}`
+            document.getElementById('cart-total-price').innerText = `$${totalPrice.toFixed(2)}`
 
-            if (cart.length === 0) {
-                cartItemsEl.innerHTML = '<p class="empty-cart">Your cart is empty.</p>'
-                return
-            }
-
+            if (cart.length === 0) { cartItemsEl.innerHTML = '<p class="empty-cart">Your cart is empty.</p>'; return }
             cartItemsEl.innerHTML = cart.map(item => `
                 <div class="cart-item">
                     <img src="${item.image}" alt="${item.name}">
@@ -239,8 +351,7 @@
                         <p>$${item.price} x ${item.quantity}</p>
                         <button class="remove-btn" onclick="removeFromCart('${item.id}')">Remove</button>
                     </div>
-                </div>
-            `).join('')
+                </div>`).join('')
         }
 
         function toggleCart() {
@@ -248,10 +359,7 @@
             const overlay = document.getElementById('cart-overlay')
             sidebar.classList.toggle('open')
             overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none'
-            
-            if (sidebar.classList.contains('open')) {
-                showCart()
-            }
+            if (sidebar.classList.contains('open')) showCart()
         }
 
         function showCheckout() {
@@ -269,11 +377,9 @@
             document.getElementById('cart-view-buttons').style.display = 'block'
             document.getElementById('checkout-view-buttons').style.display = 'none'
             document.getElementById('sidebar-title').innerText = 'Your Cart'
-            // Clear paypal container if they go back
             document.getElementById('paypal-button-container').innerHTML = ''
         }
 
-        // --- PAYPAL INTEGRATION ---
         async function initiatePayment() {
             const name = document.getElementById('cust-name').value
             const email = document.getElementById('cust-email').value
@@ -287,98 +393,54 @@
                 return
             }
 
-            const btn = document.getElementById('initiate-payment-btn')
-            btn.innerText = 'Preparing Secure Payment...'
-            btn.disabled = true
+            // If logged in, update their profile with this address for next time
+            if (currentUser) {
+                await db.from('profiles').update({
+                    full_name: name, shipping_address: address, city: city, country: country, postal_code: postal
+                }).eq('id', currentUser.id)
+            }
 
+            const btn = document.getElementById('initiate-payment-btn')
+            btn.innerText = 'Preparing Secure Payment...'; btn.disabled = true
             const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
             const fullAddress = `${address}, ${city}, ${country}, ${postal}`
 
-            // 1. Save order to Supabase as 'pending_payment'
             const { data: orderData, error: orderError } = await db.from('orders').insert({
-                total_amount: totalPrice,
-                status: 'pending_payment',
-                shipping_address: fullAddress,
-                customer_name: name,
-                customer_email: email,
-                customer_city: city,
-                customer_country: country,
-                customer_postal: postal
+                user_id: currentUser ? currentUser.id : null,
+                total_amount: totalPrice, status: 'pending_payment', shipping_address: fullAddress,
+                customer_name: name, customer_email: email, customer_city: city, customer_country: country, customer_postal: postal
             }).select()
 
-            if (orderError) {
-                alert('Error creating order: ' + orderError.message)
-                btn.innerText = 'Review & Pay with PayPal'
-                btn.disabled = false
-                return
-            }
-
+            if (orderError) { alert('Error creating order: ' + orderError.message); btn.innerText = 'Review & Pay with PayPal'; btn.disabled = false; return }
             currentOrderId = orderData[0].id
 
-            // 2. Save order items
-            const orderItemsToInsert = cart.map(item => ({
-                order_id: currentOrderId,
-                product_id: item.id,
-                quantity: item.quantity,
-                price_at_purchase: item.price
-            }))
-            await db.from('order_items').insert(orderItemsToInsert)
+            await db.from('order_items').insert(cart.map(item => ({
+                order_id: currentOrderId, product_id: item.id, quantity: item.quantity, price_at_purchase: item.price
+            })))
 
-            // 3. Hide the button and render PayPal buttons
             btn.style.display = 'none'
             renderPayPalButtons(totalPrice)
         }
 
         function renderPayPalButtons(totalPrice) {
-            // Clear any existing buttons
             document.getElementById('paypal-button-container').innerHTML = ''
-
             paypal.Buttons({
-                style: {
-                    layout: 'vertical',
-                    color:  'gold',
-                    shape:  'rect',
-                    label:  'paypal'
-                },
+                style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
                 createOrder: function(data, actions) {
-                    return actions.order.create({
-                        purchase_units: [{
-                            amount: {
-                                value: totalPrice.toFixed(2) // Must match Supabase total
-                            },
-                            description: "Global Fashion Store Order"
-                        }]
-                    });
+                    return actions.order.create({ purchase_units: [{ amount: { value: totalPrice.toFixed(2) }, description: "Global Fashion Store Order" }] })
                 },
                 onApprove: async function(data, actions) {
                     return actions.order.capture().then(async function(details) {
-                        // Payment successful! Update Supabase status to 'paid'
-                        const { error } = await db
-                            .from('orders')
-                            .update({ status: 'paid' })
-                            .eq('id', currentOrderId)
-
-                        if (error) {
-                            alert('Payment successful, but there was an error updating your order status. Please contact support with Order ID: ' + currentOrderId)
-                            return
-                        }
-
-                        // Success!
+                        const { error } = await db.from('orders').update({ status: 'paid' }).eq('id', currentOrderId)
+                        if (error) { alert('Payment successful, but error updating status. Contact support with Order ID: ' + currentOrderId); return }
                         alert(`🎉 Payment Successful!\n\nThank you, ${details.payer.name.given_name}.\nYour Order ID is: ${currentOrderId}\n\nWe will ship your items soon!`)
-                        
-                        // Reset everything
-                        cart = []
-                        saveCart()
-                        renderCart()
-                        toggleCart() // Close sidebar
+                        cart = []; saveCart(); renderCart(); toggleCart()
                         document.getElementById('checkout-form-el').reset()
-                        
-                        // Reset button for next time
                         document.getElementById('initiate-payment-btn').style.display = 'block'
                         document.getElementById('initiate-payment-btn').innerText = 'Review & Pay with PayPal'
                         document.getElementById('initiate-payment-btn').disabled = false
                         document.getElementById('paypal-button-container').innerHTML = ''
-                    });
+                    })
                 },
                 onError: function(err) {
                     console.error('PayPal Error:', err)
@@ -391,6 +453,8 @@
             }).render('#paypal-button-container')
         }
 
+        // Initialize
+        checkSession()
         loadProducts()
         renderCart()
     </script>
