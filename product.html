@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Product Details</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #fff; color: #333; padding-bottom: 80px; }
+        .app-container { max-width: 480px; margin: 0 auto; background: #fff; min-height: 100vh; position: relative; }
+        
+        /* Header */
+        .header { position: sticky; top: 0; background: #fff; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-bottom: 1px solid #f5f5f5; }
+        .header-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: #333; }
+        
+        /* Product Image */
+        .product-image { width: 100%; height: 380px; object-fit: cover; background: #f5f5f5; }
+        
+        /* Product Info */
+        .product-info { padding: 15px; }
+        .price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+        .current-price { color: #d32f2f; font-size: 24px; font-weight: bold; }
+        .product-title { font-size: 16px; line-height: 1.4; margin-bottom: 15px; color: #222; }
+        .product-desc { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 8px solid #f5f5f5; }
+        
+        /* Details Grid */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; font-size: 13px; color: #666; }
+        .detail-item strong { color: #333; display: block; margin-bottom: 3px; }
+
+        /* Bottom Action Bar */
+        .bottom-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid #eee; display: flex; padding: 10px; gap: 10px; z-index: 100; }
+        .bar-icon { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: #666; text-decoration: none; }
+        .bar-icon span { font-size: 18px; margin-bottom: 2px; }
+        .add-to-cart-btn { flex: 1; background: #d32f2f; color: white; border: none; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .add-to-cart-btn:active { background: #b71c1c; }
+
+        /* Loading State */
+        .loading { text-align: center; padding: 50px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <div class="loading">Loading product details...</div>
+</div>
+
+<!-- Bottom Action Bar -->
+<div class="bottom-bar" id="bottom-bar" style="display:none;">
+    <a href="index.html" class="bar-icon"><span>🏠</span>Store</a>
+    <a href="index.html" class="bar-icon" onclick="toggleCart()"><span></span>Cart</a>
+    <button class="add-to-cart-btn" id="main-add-btn">Add to Cart</button>
+</div>
+
+<script>
+    const supabaseUrl = 'https://qtszfqwojgzyypxybgug.supabase.co'
+    const supabaseKey = 'sb_publishable_ju-FVpTSui3d4b5Ab0L3HA_sklq66Ut'
+    const { createClient } = supabase
+    const db = createClient(supabaseUrl, supabaseKey)
+
+    // 1. Get Product ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    let currentProduct = null;
+
+    async function loadProduct() {
+        if (!productId) {
+            document.getElementById('app').innerHTML = '<div class="loading">Product not found.</div>';
+            return;
+        }
+
+        const { data, error } = await db.from('products').select('*').eq('id', productId).single();
+
+        if (error || !data) {
+            document.getElementById('app').innerHTML = '<div class="loading">Product not found.</div>';
+            return;
+        }
+
+        currentProduct = data;
+
+        // 2. Render the Page
+        document.getElementById('app').innerHTML = `
+            <div class="header">
+                <a href="index.html" class="header-btn">‹</a>
+                <a href="#" class="header-btn" onclick="alert('Share link copied!')">🔗</a>
+            </div>
+            <img src="${data.image_url}" class="product-image" alt="${data.name}">
+            <div class="product-info">
+                <div class="price-row">
+                    <span class="current-price">$${data.price.toFixed(2)}</span>
+                </div>
+                <h1 class="product-title">${data.name}</h1>
+                <p class="product-desc">${data.description || 'No description available for this product.'}</p>
+            </div>
+            <div class="details-grid">
+                <div class="detail-item"><strong>Category</strong>${data.category}</div>
+                <div class="detail-item"><strong>Stock</strong>${data.stock_quantity} available</div>
+                <div class="detail-item"><strong>Shipping</strong>Free Delivery</div>
+                <div class="detail-item"><strong>Warranty</strong>1 Year</div>
+            </div>
+        `;
+        
+        document.getElementById('bottom-bar').style.display = 'flex';
+    }
+
+    // Add to Cart Logic
+    document.getElementById('main-add-btn').addEventListener('click', function() {
+        if (!currentProduct) return;
+        
+        let cart = JSON.parse(localStorage.getItem('global_store_cart')) || [];
+        const existingItem = cart.find(item => item.id === currentProduct.id);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({ 
+                id: currentProduct.id, 
+                name: currentProduct.name, 
+                price: currentProduct.price, 
+                image: currentProduct.image_url, 
+                quantity: 1 
+            });
+        }
+        
+        localStorage.setItem('global_store_cart', JSON.stringify(cart));
+        
+        this.innerText = 'Added to Cart! ✓';
+        this.style.background = '#4caf50';
+        setTimeout(() => {
+            this.innerText = 'Add to Cart';
+            this.style.background = '#d32f2f';
+        }, 1500);
+    });
+
+    loadProduct();
+</script>
+</body>
+</html>
