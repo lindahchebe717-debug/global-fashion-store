@@ -134,7 +134,7 @@
         <div class="promo-item"><div class="promo-icon">🎟️</div><p>Free Shipping</p></div>
         <div class="promo-item"><div class="promo-icon">🎡</div><p>Tech Prizes</p></div>
         <div class="promo-item"><div class="promo-icon"></div><p>Pre-order</p></div>
-        <div class="promo-item"><div class="promo-icon">🟢</div><p>10% OFF</p></div>
+        <div class="promo-item"><div class="promo-icon"></div><p>10% OFF</p></div>
         <div class="promo-item"><div class="promo-icon">🎁</div><p>New User</p></div>
     </div>
 
@@ -192,7 +192,7 @@
     </div>
     <!-- UPDATED: Linked directly to account.html -->
     <a href="account.html" class="nav-item">
-        <div class="nav-icon">👤</div>
+        <div class="nav-icon"></div>
         <div>Account</div>
     </a>
 </div>
@@ -341,23 +341,29 @@
         allProducts = data
         statusText.style.display = 'none'
         
-        // Render Flash Sale (First 4 items)
+        // Render Flash Sale (First 4 items) - UPDATED TO LINK TO PRODUCT PAGE
         flashContainer.innerHTML = data.slice(0, 4).map(p => `
             <div class="scroll-card">
-                <img src="${p.image_url}" alt="${p.name}">
-                <div class="price">$${p.price.toFixed(2)}</div>
-                <div class="name">${p.name}</div>
+                <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit; display:block;">
+                    <img src="${p.image_url}" alt="${p.name}">
+                    <div class="price">$${p.price.toFixed(2)}</div>
+                    <div class="name">${p.name}</div>
+                </a>
                 <button class="add-btn-small" onclick="addToCart('${p.id}', this)">Add</button>
             </div>
         `).join('')
 
-        // Render Main Grid (All items)
+        // Render Main Grid (All items) - UPDATED TO LINK TO PRODUCT PAGE
         mainGrid.innerHTML = data.map(p => `
             <div class="grid-card">
-                <img src="${p.image_url}" alt="${p.name}">
-                <div class="info">
-                    <div class="name">${p.name}</div>
-                    <div class="price">$${p.price.toFixed(2)}</div>
+                <a href="product.html?id=${p.id}" style="text-decoration:none; color:inherit; display:block;">
+                    <img src="${p.image_url}" alt="${p.name}">
+                    <div class="info">
+                        <div class="name">${p.name}</div>
+                        <div class="price">$${p.price.toFixed(2)}</div>
+                    </div>
+                </a>
+                <div style="padding: 0 8px 8px 8px;">
                     <button class="add-btn" onclick="addToCart('${p.id}', this)">Add to Cart</button>
                 </div>
             </div>
