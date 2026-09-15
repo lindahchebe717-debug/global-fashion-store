@@ -175,20 +175,21 @@
         <div class="nav-icon">🏠</div>
         <div>Home</div>
     </div>
+    <!-- UPDATED: Linked directly to category.html -->
     <a href="category.html" class="nav-item">
         <div class="nav-icon"></div>
         <div>Category</div>
     </a>
-    <!-- FIXED: Now points to messages.html -->
-    <a href="messages.html" class="nav-item">
+    <div class="nav-item">
         <div class="nav-icon">💬</div>
         <div>Message</div>
-    </a>
+    </div>
     <div class="nav-item" onclick="toggleCart()">
         <div class="nav-icon"></div>
         <div>Cart</div>
         <div class="nav-badge" id="cart-count">0</div>
     </div>
+    <!-- UPDATED: Linked directly to account.html -->
     <a href="account.html" class="nav-item">
         <div class="nav-icon">👤</div>
         <div>Account</div>
@@ -270,6 +271,7 @@
     let currentOrderId = null
     let currentUser = null
 
+    // --- COUNTDOWN TIMER ---
     function startCountdown() {
         let h=1, m=40, s=56;
         setInterval(() => {
@@ -281,6 +283,7 @@
     }
     startCountdown();
 
+    // --- AUTH ---
     async function checkSession() {
         const { data: { session } } = await db.auth.getSession()
         if (session) {
@@ -324,6 +327,7 @@
         closeAuthModal(); checkSession()
     }
 
+    // --- STORE LOGIC ---
     async function loadProducts() {
         const { data, error } = await db.from('products').select('*')
         const statusText = document.getElementById('status')
@@ -336,6 +340,7 @@
         allProducts = data
         statusText.style.display = 'none'
         
+        // Render Flash Sale (First 4 items)
         flashContainer.innerHTML = data.slice(0, 4).map(p => `
             <div class="scroll-card">
                 <img src="${p.image_url}" alt="${p.name}">
@@ -345,6 +350,7 @@
             </div>
         `).join('')
 
+        // Render Main Grid (All items)
         mainGrid.innerHTML = data.map(p => `
             <div class="grid-card">
                 <img src="${p.image_url}" alt="${p.name}">
